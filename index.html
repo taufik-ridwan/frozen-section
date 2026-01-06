@@ -200,6 +200,32 @@
         
         <button class="add-patient-btn" onclick="addPatient()">+ Tambah Pasien</button>
         
+        <div class="form-group">
+            <label>
+                <input type="checkbox" id="konsulен-jaga-checkbox" onchange="toggleKonsulenJaga()" style="width: auto; margin-right: 8px;">
+                Konsulen Jaga Frozen Sore
+            </label>
+        </div>
+        
+        <div class="form-group" id="konsulen-jaga-dropdown" style="display: none;">
+            <label>Pilih Dokter Konsulen Jaga</label>
+            <select id="konsulen-jaga-select">
+                <option value="">Pilih Dokter Konsultan</option>
+                <option value="dr. Paranita Ferronika, Ph.D, Sp.PA (K)">dr. Paranita Ferronika, Ph.D, Sp.PA (K)</option>
+                <option value="dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)">dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)</option>
+                <option value="dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)">dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)</option>
+                <option value="dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)">dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)</option>
+                <option value="dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)">dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)</option>
+                <option value="Dr. dr. Indrawati, Sp.PA (K)">Dr. dr. Indrawati, Sp.PA (K)</option>
+                <option value="Prof. Dr. dr. Irianiwati, Sp.PA(K)">Prof. Dr. dr. Irianiwati, Sp.PA(K)</option>
+                <option value="dr. Setiyani Puji Lestari, Sp.PA">dr. Setiyani Puji Lestari, Sp.PA</option>
+                <option value="dr. Naomi Yoshuantari, Sp.PA (K)">dr. Naomi Yoshuantari, Sp.PA (K)</option>
+                <option value="dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)">dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)</option>
+                <option value="dr. Faizah Dwi Tirtasari, Sp.PA">dr. Faizah Dwi Tirtasari, Sp.PA</option>
+                <option value="Dr. dr. Rita Cempaka, Sp.PA (K)">Dr. dr. Rita Cempaka, Sp.PA (K)</option>
+            </select>
+        </div>
+        
         <button class="generate-btn" onclick="generateOutput()">Generate Output</button>
         
         <div class="output-section" id="output-section">
@@ -363,6 +389,15 @@
                 output += `Asisten: ${junior}\n`;
             });
             
+            // Add Konsulen Jaga if checked
+            const konsulenJagaChecked = document.getElementById('konsulен-jaga-checkbox').checked;
+            if (konsulenJagaChecked) {
+                const konsulenJagaName = document.getElementById('konsulen-jaga-select').value;
+                if (konsulenJagaName) {
+                    output += `\nKonsulen jaga frozen sore: ${konsulenJagaName}`;
+                }
+            }
+            
             document.getElementById('output').textContent = output;
             document.getElementById('output-section').style.display = 'block';
             document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
@@ -380,6 +415,12 @@
                     btn.classList.remove('copied');
                 }, 2000);
             });
+        }
+        
+        function toggleKonsulenJaga() {
+            const checkbox = document.getElementById('konsulен-jaga-checkbox');
+            const dropdown = document.getElementById('konsulen-jaga-dropdown');
+            dropdown.style.display = checkbox.checked ? 'block' : 'none';
         }
         
         // Add first patient on load

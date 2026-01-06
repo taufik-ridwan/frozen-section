@@ -1,0 +1,389 @@
+<!DOCTYPE html>
+<html lang="id">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Frozen Section Report Generator</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 900px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 20px;
+            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
+            padding: 40px;
+        }
+        
+        h1 {
+            color: #667eea;
+            margin-bottom: 30px;
+            text-align: center;
+            font-size: 28px;
+        }
+        
+        .form-group {
+            margin-bottom: 25px;
+        }
+        
+        label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 600;
+            font-size: 14px;
+        }
+        
+        input, select, textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e0e0e0;
+            border-radius: 8px;
+            font-size: 14px;
+            transition: all 0.3s;
+        }
+        
+        input:focus, select:focus, textarea:focus {
+            outline: none;
+            border-color: #667eea;
+            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
+        }
+        
+        .patient-section {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 20px;
+            border-left: 4px solid #667eea;
+        }
+        
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .patient-header h3 {
+            color: #667eea;
+            font-size: 18px;
+        }
+        
+        .remove-btn {
+            background: #ef4444;
+            color: white;
+            border: none;
+            padding: 8px 16px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 13px;
+            transition: background 0.3s;
+        }
+        
+        .remove-btn:hover {
+            background: #dc2626;
+        }
+        
+        .row {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 15px;
+        }
+        
+        .add-patient-btn {
+            width: 100%;
+            padding: 12px;
+            background: #10b981;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.3s;
+            margin-bottom: 20px;
+        }
+        
+        .add-patient-btn:hover {
+            background: #059669;
+        }
+        
+        .generate-btn {
+            width: 100%;
+            padding: 15px;
+            background: #667eea;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 18px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .generate-btn:hover {
+            background: #5568d3;
+            transform: translateY(-2px);
+            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+        }
+        
+        .output-section {
+            margin-top: 30px;
+            display: none;
+        }
+        
+        .output-box {
+            background: #f8f9fa;
+            padding: 20px;
+            border-radius: 8px;
+            white-space: pre-wrap;
+            font-family: 'Courier New', monospace;
+            font-size: 13px;
+            line-height: 1.6;
+            border: 2px solid #e0e0e0;
+            max-height: 400px;
+            overflow-y: auto;
+        }
+        
+        .copy-btn {
+            width: 100%;
+            padding: 12px;
+            background: #8b5cf6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+            margin-top: 10px;
+        }
+        
+        .copy-btn:hover {
+            background: #7c3aed;
+        }
+        
+        .copy-btn.copied {
+            background: #10b981;
+        }
+        
+        .time-input {
+            display: grid;
+            grid-template-columns: 1fr 1fr;
+            gap: 10px;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <h1>📋 Frozen Section Report Generator</h1>
+        
+        <div class="form-group">
+            <label for="date">Tanggal</label>
+            <input type="date" id="date" required>
+        </div>
+        
+        <div id="patients-container"></div>
+        
+        <button class="add-patient-btn" onclick="addPatient()">+ Tambah Pasien</button>
+        
+        <button class="generate-btn" onclick="generateOutput()">Generate Output</button>
+        
+        <div class="output-section" id="output-section">
+            <h2 style="color: #667eea; margin-bottom: 15px;">Output:</h2>
+            <div class="output-box" id="output"></div>
+            <button class="copy-btn" id="copy-btn" onclick="copyToClipboard()">📋 Salin ke Clipboard</button>
+        </div>
+    </div>
+
+    <script>
+        let patientCount = 0;
+        
+        const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
+        const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        
+        function addPatient() {
+            patientCount++;
+            const container = document.getElementById('patients-container');
+            const patientDiv = document.createElement('div');
+            patientDiv.className = 'patient-section';
+            patientDiv.id = `patient-${patientCount}`;
+            
+            patientDiv.innerHTML = `
+                <div class="patient-header">
+                    <h3>Pasien ${patientCount}</h3>
+                    <button class="remove-btn" onclick="removePatient(${patientCount})">Hapus</button>
+                </div>
+                <div class="form-group">
+                    <label>Nama Pasien</label>
+                    <input type="text" class="patient-name" placeholder="Contoh: An. Safa Widya" required>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Umur</label>
+                        <input type="text" class="patient-age" placeholder="Contoh: 14 th" required>
+                    </div>
+                    <div class="form-group">
+                        <label>No. Rekam Medis</label>
+                        <input type="text" class="patient-mr" placeholder="Contoh: 02327956" required>
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Diagnosis</label>
+                    <input type="text" class="patient-diagnosis" placeholder="Contoh: kistoma ovarii" required>
+                </div>
+                <div class="form-group">
+                    <label>Waktu Operasi</label>
+                    <div class="time-input">
+                        <input type="time" class="operation-time" required>
+                        <input type="time" class="confirmation-time" placeholder="Waktu konfirmasi (opsional)">
+                    </div>
+                </div>
+                <div class="form-group">
+                    <label>Dokter Konsultan (Acc)</label>
+                    <select class="doctor-acc" required>
+                        <option value="">Pilih Dokter Konsultan</option>
+                        <option value="dr. Paranita Ferronika, Ph.D, Sp.PA (K)">dr. Paranita Ferronika, Ph.D, Sp.PA (K)</option>
+                        <option value="dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)">dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)</option>
+                        <option value="dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)">dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)</option>
+                        <option value="dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)">dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)</option>
+                        <option value="dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)">dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)</option>
+                        <option value="Dr. dr. Indrawati, Sp.PA (K)">Dr. dr. Indrawati, Sp.PA (K)</option>
+                        <option value="Prof. Dr. dr. Irianiwati, Sp.PA(K)">Prof. Dr. dr. Irianiwati, Sp.PA(K)</option>
+                        <option value="dr. Setiyani Puji Lestari, Sp.PA">dr. Setiyani Puji Lestari, Sp.PA</option>
+                        <option value="dr. Naomi Yoshuantari, Sp.PA (K)">dr. Naomi Yoshuantari, Sp.PA (K)</option>
+                        <option value="dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)">dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)</option>
+                        <option value="dr. Faizah Dwi Tirtasari, Sp.PA">dr. Faizah Dwi Tirtasari, Sp.PA</option>
+                        <option value="Dr. dr. Rita Cempaka, Sp.PA (K)">Dr. dr. Rita Cempaka, Sp.PA (K)</option>
+                    </select>
+                </div>
+                <div class="row">
+                    <div class="form-group">
+                        <label>Inisial Senior</label>
+                        <input type="text" class="senior-initials" placeholder="Contoh: FA" required>
+                    </div>
+                    <div class="form-group">
+                        <label>Inisial Junior</label>
+                        <input type="text" class="junior-initials" placeholder="Contoh: AJ" required>
+                    </div>
+                </div>
+            `;
+            
+            container.appendChild(patientDiv);
+        }
+        
+        function removePatient(id) {
+            const patient = document.getElementById(`patient-${id}`);
+            if (patient) {
+                patient.remove();
+            }
+            renumberPatients();
+        }
+        
+        function renumberPatients() {
+            const patients = document.querySelectorAll('.patient-section');
+            patients.forEach((patient, index) => {
+                const header = patient.querySelector('.patient-header h3');
+                header.textContent = `Pasien ${index + 1}`;
+            });
+        }
+        
+        function formatDate(dateStr) {
+            const date = new Date(dateStr);
+            const dayName = days[date.getDay()];
+            const day = date.getDate();
+            const month = months[date.getMonth()];
+            const year = date.getFullYear();
+            return `${dayName}, ${day} ${month} ${year}`;
+        }
+        
+        function generateOutput() {
+            const dateInput = document.getElementById('date').value;
+            if (!dateInput) {
+                alert('Mohon isi tanggal terlebih dahulu');
+                return;
+            }
+            
+            const patients = document.querySelectorAll('.patient-section');
+            if (patients.length === 0) {
+                alert('Mohon tambahkan minimal 1 pasien');
+                return;
+            }
+            
+            const formattedDate = formatDate(dateInput);
+            const totalPatients = patients.length;
+            
+            let output = `Selamat malam Mas dan Mbak, mohon izin menyampaikan rencana frozen section pada ${formattedDate}, ada ${totalPatients} pasien:\n`;
+            
+            patients.forEach((patient, index) => {
+                const name = patient.querySelector('.patient-name').value;
+                const age = patient.querySelector('.patient-age').value;
+                const mr = patient.querySelector('.patient-mr').value;
+                const diagnosis = patient.querySelector('.patient-diagnosis').value;
+                const operationTime = patient.querySelector('.operation-time').value;
+                const confirmationTime = patient.querySelector('.confirmation-time').value;
+                const doctorAcc = patient.querySelector('.doctor-acc').value;
+                const senior = patient.querySelector('.senior-initials').value;
+                const junior = patient.querySelector('.junior-initials').value;
+                
+                if (!name || !age || !mr || !diagnosis || !operationTime || !doctorAcc || !senior || !junior) {
+                    alert(`Mohon lengkapi semua data untuk Pasien ${index + 1}`);
+                    return;
+                }
+                
+                // Add "th" after age if not already present
+                const ageWithTh = age.includes('th') ? age : age.replace(/(\d+)\s*/, '$1 th');
+                
+                output += `${index + 1}.  ${name}, ${ageWithTh}, ${mr}, dengan ${diagnosis}\n`;
+                output += `Rencana operasi pukul ${operationTime} WIB`;
+                
+                // Check if operation time is before 08:00
+                const [hours, minutes] = operationTime.split(':').map(Number);
+                if (hours < 8) {
+                    output += ` (konfirmasi jaringan diproses paling cepat pukul 08.00 WIB)`;
+                } else if (confirmationTime) {
+                    output += ` (konfirmasi jaringan diproses paling cepat pukul ${confirmationTime} WIB)`;
+                }
+                
+                output += `\nAcc ${doctorAcc}\n`;
+                output += `Senior: ${senior}\n`;
+                output += `Asisten: ${junior}\n`;
+            });
+            
+            document.getElementById('output').textContent = output;
+            document.getElementById('output-section').style.display = 'block';
+            document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+        }
+        
+        function copyToClipboard() {
+            const output = document.getElementById('output').textContent;
+            navigator.clipboard.writeText(output).then(() => {
+                const btn = document.getElementById('copy-btn');
+                btn.textContent = '✓ Tersalin!';
+                btn.classList.add('copied');
+                
+                setTimeout(() => {
+                    btn.textContent = '📋 Salin ke Clipboard';
+                    btn.classList.remove('copied');
+                }, 2000);
+            });
+        }
+        
+        // Add first patient on load
+        addPatient();
+    </script>
+</body>
+</html>

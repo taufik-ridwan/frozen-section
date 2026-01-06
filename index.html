@@ -4,6 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frozen Section Report Generator</title>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
         * {
             margin: 0;
@@ -180,6 +181,41 @@
             background: #10b981;
         }
         
+        .import-section {
+            background: #f0f9ff;
+            padding: 20px;
+            border-radius: 12px;
+            margin-bottom: 30px;
+            border: 2px dashed #667eea;
+        }
+        
+        .import-btn {
+            display: inline-block;
+            padding: 12px 24px;
+            background: #3b82f6;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s;
+        }
+        
+        .import-btn:hover {
+            background: #2563eb;
+        }
+        
+        .file-input {
+            display: none;
+        }
+        
+        .import-info {
+            margin-top: 10px;
+            font-size: 13px;
+            color: #666;
+        }
+        
         .time-input {
             display: grid;
             grid-template-columns: 1fr 1fr;
@@ -190,6 +226,15 @@
 <body>
     <div class="container">
         <h1>📋 Frozen Section Report Generator</h1>
+        
+        <div class="import-section">
+            <h3 style="color: #3b82f6; margin-bottom: 10px;">📥 Import dari Excel</h3>
+            <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls" onchange="fileSelected()">
+            <label for="excel-file" class="import-btn">Pilih File Excel (.xlsx)</label>
+            <button class="import-btn" id="process-btn" onclick="processSpreadsheet()" style="margin-left: 10px; background: #10b981; display: none;">Proses Spreadsheet</button>
+            <div class="import-info" id="file-name"></div>
+            <div class="import-info">Import data dari sheet "LIST TINDAKAN" - hanya baris dengan "frozen section"</div>
+        </div>
         
         <div class="form-group">
             <label for="date">Tanggal</label>
@@ -240,6 +285,337 @@
         
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
+        
+        // Doctor initials mapping
+        const doctorMapping = {
+            'FE': 'dr. Paranita Ferronika, Ph.D, Sp.PA (K)',
+            'HT': 'dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)',
+            'DK': 'dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)',
+            'ER': 'dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)',
+            'DW': 'dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)',
+            'IN': 'Dr. dr. Indrawati, Sp.PA (K)',
+            'IR': 'Prof. Dr. dr. Irianiwati, Sp.PA(K)',
+            'SY': 'dr. Setiyani Puji Lestari, Sp.PA',
+            'NY': 'dr. Naomi Yoshuantari, Sp.PA (K)',
+            'AU': 'dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)',
+            'UW': 'dr. Faizah Dwi Tirtasari, Sp.PA',
+            'RT': 'Dr. dr. Rita Cempaka, Sp.PA (K)'
+        };
+        
+        let selectedFile = null;
+        
+        function fileSelected() {
+            const fileInput = document.getElementById('excel-file');
+            const file = fileInput.files[0];
+            if (file) {
+                selectedFile = file;
+                document.getElementById('file-name').textContent = `File terpilih: ${file.name}`;
+                document.getElementById('process-btn').style.display = 'inline-block';
+            }
+        }
+        
+        function processSpreadsheet() {
+            const dateInput = document.getElementById('date').value;
+            if (!dateInput) {
+                alert('Mohon isi tanggal terlebih dahulu sebelum memproses spreadsheet');
+                return;
+            }
+            
+            if (!selectedFile) {
+                alert('Mohon pilih file Excel terlebih dahulu');
+                return;
+            }
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Find the "LIST TINDAKAN" sheet
+                    const sheetName = workbook.SheetNames.find(name => 
+                        name.toUpperCase().includes('LIST TINDAKAN') || name.toUpperCase().includes('LISTTINDAKAN')
+                    );
+                    
+                    if (!sheetName) {
+                        alert('Sheet "LIST TINDAKAN" tidak ditemukan dalam file Excel');
+                        return;
+                    }
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Collect frozen section patients
+                    const patients = [];
+                    
+                    for (let i = 0; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || !Array.isArray(row)) continue;
+                        
+                        // Check if column E (index 4) contains "frozen"
+                        const columnE = row[4] ? row[4].toString().toLowerCase() : '';
+                        
+                        if (columnE.includes('frozen')) {
+                            // Parse combined NAMA, USIA, RM field (Column C, index 2)
+                            let name = '', age = '', mr = '';
+                            if (row[2]) {
+                                const combined = row[2].toString().trim();
+                                const parts = combined.split(',').map(p => p.trim());
+                                if (parts.length >= 1) name = parts[0];
+                                if (parts.length >= 2) age = parts[1];
+                                if (parts.length >= 3) mr = parts[2];
+                            }
+                            
+                            // Add "th" after age if not already present
+                            const ageWithTh = age && age.includes('th') ? age : age.replace(/(\d+)\s*/, '$1 th');
+                            
+                            // Diagnosis (Column D, index 3)
+                            const diagnosis = row[3] ? row[3].toString().trim() : '';
+                            
+                            // Time (Column J, index 9)
+                            let operationTime = '';
+                            if (row[9]) {
+                                const waktu = row[9].toString().trim();
+                                const timeMatch = waktu.match(/(\d{1,2})[.:](\d{2})/);
+                                if (timeMatch) {
+                                    const hours = timeMatch[1].padStart(2, '0');
+                                    const minutes = timeMatch[2];
+                                    operationTime = `${hours}:${minutes}`;
+                                }
+                            }
+                            
+                            // Doctor consultant (Column F, index 5)
+                            let doctorAcc = '';
+                            if (row[5]) {
+                                const konsulText = row[5].toString().trim();
+                                const initialMatch = konsulText.match(/dr\.\s*([A-Z]{2})/i);
+                                if (initialMatch) {
+                                    const konsulInitial = initialMatch[1].toUpperCase();
+                                    doctorAcc = doctorMapping[konsulInitial] || '';
+                                }
+                            }
+                            
+                            // Senior (Column G, index 6)
+                            const senior = row[6] ? row[6].toString().trim() : '';
+                            
+                            // Junior (Column H, index 7)
+                            const junior = row[7] ? row[7].toString().trim() : '';
+                            
+                            if (name && operationTime && doctorAcc) {
+                                patients.push({
+                                    name, age: ageWithTh, mr, diagnosis,
+                                    operationTime, doctorAcc, senior, junior
+                                });
+                            }
+                        }
+                    }
+                    
+                    if (patients.length === 0) {
+                        alert('Tidak ada data frozen section yang ditemukan dalam file');
+                        return;
+                    }
+                    
+                    // Generate output
+                    const formattedDate = formatDate(dateInput);
+                    let output = `Selamat malam Mas dan Mbak, mohon izin menyampaikan rencana frozen section pada ${formattedDate}, ada ${patients.length} pasien:\n`;
+                    
+                    patients.forEach((patient, index) => {
+                        output += `${index + 1}.  ${patient.name}, ${patient.age}, ${patient.mr}, dengan ${patient.diagnosis}\n`;
+                        output += `Rencana operasi pukul ${patient.operationTime} WIB`;
+                        
+                        // Check if operation time is before 08:00
+                        const [hours, minutes] = patient.operationTime.split(':').map(Number);
+                        if (hours < 8) {
+                            output += ` (konfirmasi jaringan diproses paling cepat pukul 08.00 WIB)`;
+                        }
+                        
+                        output += `\nAcc ${patient.doctorAcc}\n`;
+                        output += `Senior: ${patient.senior}\n`;
+                        output += `Asisten: ${patient.junior}\n`;
+                    });
+                    
+                    // Add Konsulen Jaga if checked
+                    const konsulenJagaChecked = document.getElementById('konsulен-jaga-checkbox').checked;
+                    if (konsulenJagaChecked) {
+                        const konsulenJagaName = document.getElementById('konsulen-jaga-select').value;
+                        if (konsulenJagaName) {
+                            output += `\nKonsulen jaga frozen sore: ${konsulenJagaName}`;
+                        } else {
+                            alert('Mohon pilih dokter konsulen jaga');
+                            return;
+                        }
+                    }
+                    
+                    document.getElementById('output').textContent = output;
+                    document.getElementById('output-section').style.display = 'block';
+                    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
+                    
+                    alert(`Berhasil memproses ${patients.length} data pasien frozen section`);
+                    
+                } catch (error) {
+                    console.error('Error reading Excel:', error);
+                    alert('Gagal membaca file Excel. Pastikan format file benar.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(selectedFile);
+        }
+        
+        function handleFileUpload(file) {
+            if (!file) return;
+            
+            const reader = new FileReader();
+            reader.onload = function(e) {
+                try {
+                    const data = new Uint8Array(e.target.result);
+                    const workbook = XLSX.read(data, { type: 'array' });
+                    
+                    // Find the "LIST TINDAKAN" sheet
+                    const sheetName = workbook.SheetNames.find(name => 
+                        name.toUpperCase().includes('LIST TINDAKAN') || name.toUpperCase().includes('LISTTINDAKAN')
+                    );
+                    
+                    if (!sheetName) {
+                        alert('Sheet "LIST TINDAKAN" tidak ditemukan dalam file Excel');
+                        return;
+                    }
+                    
+                    const worksheet = workbook.Sheets[sheetName];
+                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
+                    
+                    // Find header row and column indices
+                    let headerRow = -1;
+                    let headers = [];
+                    
+                    for (let i = 0; i < Math.min(10, jsonData.length); i++) {
+                        const row = jsonData[i];
+                        if (row && Array.isArray(row)) {
+                            const rowStr = row.join('|').toUpperCase();
+                            if (rowStr.includes('TINDAKAN') || rowStr.includes('NAMA') || rowStr.includes('KONSUL')) {
+                                headerRow = i;
+                                headers = row.map(h => h ? h.toString().toUpperCase().trim() : '');
+                                break;
+                            }
+                        }
+                    }
+                    
+                    if (headerRow === -1) {
+                        alert('Header tidak ditemukan. Pastikan ada kolom TINDAKAN, NAMA, dll.');
+                        return;
+                    }
+                    
+                    // Find column indices
+                    const colIndices = {
+                        tindakan: headers.findIndex(h => h.includes('TINDAKAN')),
+                        namaUsiaRm: headers.findIndex(h => h.includes('NAMA') && (h.includes('USIA') || h.includes('RM'))),
+                        diagnosis: headers.findIndex(h => h.includes('DIAGNOSIS') || h.includes('DIAGNOSA')),
+                        waktu: headers.findIndex(h => h.includes('JAM') || h.includes('WAKTU')),
+                        konsul: headers.findIndex(h => h.includes('KONSUL') && !h.includes('JAGA')),
+                        senior: headers.findIndex(h => h.includes('SENIOR')),
+                        junior: headers.findIndex(h => h.includes('JUNIOR') || h.includes('ASISTEN'))
+                    };
+                    
+                    // Clear existing patients
+                    document.getElementById('patients-container').innerHTML = '';
+                    patientCount = 0;
+                    
+                    // Process data rows
+                    let importedCount = 0;
+                    for (let i = headerRow + 1; i < jsonData.length; i++) {
+                        const row = jsonData[i];
+                        if (!row || !Array.isArray(row)) continue;
+                        
+                        // Check if column E (index 4) contains "frozen"
+                        const columnE = row[4] ? row[4].toString().toLowerCase() : '';
+                        
+                        // Check if column E contains "frozen"
+                        if (columnE.includes('frozen')) {
+                            addPatient();
+                            
+                            const patientDiv = document.querySelector('.patient-section:last-child');
+                            
+                            // Parse combined NAMA, USIA, RM field
+                            if (colIndices.namaUsiaRm >= 0 && row[colIndices.namaUsiaRm]) {
+                                const combined = row[colIndices.namaUsiaRm].toString().trim();
+                                // Format: "Ny. Kartini, 69 th, 02326704"
+                                const parts = combined.split(',').map(p => p.trim());
+                                
+                                if (parts.length >= 1) {
+                                    patientDiv.querySelector('.patient-name').value = parts[0];
+                                }
+                                if (parts.length >= 2) {
+                                    patientDiv.querySelector('.patient-age').value = parts[1];
+                                }
+                                if (parts.length >= 3) {
+                                    patientDiv.querySelector('.patient-mr').value = parts[2];
+                                }
+                            }
+                            
+                            if (colIndices.diagnosis >= 0 && row[colIndices.diagnosis]) {
+                                patientDiv.querySelector('.patient-diagnosis').value = row[colIndices.diagnosis].toString().trim();
+                            }
+                            
+                            if (colIndices.waktu >= 0 && row[colIndices.waktu]) {
+                                const waktu = row[colIndices.waktu].toString().trim();
+                                // Extract time from formats like "07.30 (konfirmasi jaringan" or "11.00"
+                                let timeStr = waktu;
+                                
+                                // Extract HH.MM or HH:MM pattern
+                                const timeMatch = waktu.match(/(\d{1,2})[.:](\d{2})/);
+                                if (timeMatch) {
+                                    const hours = timeMatch[1].padStart(2, '0');
+                                    const minutes = timeMatch[2];
+                                    timeStr = `${hours}:${minutes}`;
+                                } else if (!isNaN(waktu)) {
+                                    // Excel time as decimal
+                                    const decimal = parseFloat(waktu);
+                                    const hours = Math.floor(decimal * 24);
+                                    const minutes = Math.floor((decimal * 24 * 60) % 60);
+                                    timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
+                                }
+                                patientDiv.querySelector('.operation-time').value = timeStr;
+                            }
+                            
+                            if (colIndices.konsul >= 0 && row[colIndices.konsul]) {
+                                const konsulText = row[colIndices.konsul].toString().trim();
+                                // Extract initials from "dr. AU" format
+                                const initialMatch = konsulText.match(/dr\.\s*([A-Z]{2})/i);
+                                if (initialMatch) {
+                                    const konsulInitial = initialMatch[1].toUpperCase();
+                                    const doctorName = doctorMapping[konsulInitial] || '';
+                                    if (doctorName) {
+                                        patientDiv.querySelector('.doctor-acc').value = doctorName;
+                                    }
+                                }
+                            }
+                            
+                            if (colIndices.senior >= 0 && row[colIndices.senior]) {
+                                patientDiv.querySelector('.senior-initials').value = row[colIndices.senior].toString().trim();
+                            }
+                            
+                            if (colIndices.junior >= 0 && row[colIndices.junior]) {
+                                patientDiv.querySelector('.junior-initials').value = row[colIndices.junior].toString().trim();
+                            }
+                            
+                            importedCount++;
+                        }
+                    }
+                    
+                    if (importedCount === 0) {
+                        alert('Tidak ada data frozen section yang ditemukan dalam file');
+                        addPatient(); // Add at least one empty patient
+                    } else {
+                        alert(`Berhasil import ${importedCount} data pasien frozen section`);
+                    }
+                    
+                } catch (error) {
+                    console.error('Error reading Excel:', error);
+                    alert('Gagal membaca file Excel. Pastikan format file benar.');
+                }
+            };
+            
+            reader.readAsArrayBuffer(file);
+        }
         
         function addPatient() {
             patientCount++;

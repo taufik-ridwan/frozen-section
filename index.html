@@ -4,8 +4,21 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>Frozen Section Report Generator</title>
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
     <style>
+        :root {
+            --primary-color: #0056b3; /* Medical Blue */
+            --primary-hover: #004494;
+            --secondary-color: #6c757d;
+            --bg-color: #f4f7f6;
+            --card-bg: #ffffff;
+            --text-main: #333333;
+            --text-secondary: #666666;
+            --border-color: #d1d5db;
+            --success-color: #10b981;
+            --danger-color: #ef4444;
+            --input-bg: #f9fafb;
+        }
+
         * {
             margin: 0;
             padding: 0;
@@ -13,270 +26,308 @@
         }
         
         body {
-            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
-            min-height: 100vh;
-            padding: 20px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, Helvetica, Arial, sans-serif;
+            background-color: var(--bg-color);
+            color: var(--text-main);
+            line-height: 1.5;
+            padding: 40px 20px;
         }
         
         .container {
-            max-width: 900px;
+            max-width: 800px;
             margin: 0 auto;
-            background: white;
-            border-radius: 20px;
-            box-shadow: 0 20px 60px rgba(0,0,0,0.3);
-            padding: 40px;
+            background: var(--card-bg);
+            border-radius: 12px;
+            box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+            overflow: hidden;
         }
-        
-        h1 {
-            color: #667eea;
-            margin-bottom: 30px;
+
+        /* Header */
+        .header {
+            background-color: var(--primary-color);
+            color: white;
+            padding: 24px 30px;
             text-align: center;
-            font-size: 28px;
+        }
+
+        .header h1 {
+            font-size: 24px;
+            font-weight: 600;
+            letter-spacing: 0.5px;
+        }
+
+        .content-wrapper {
+            padding: 30px;
+        }
+
+        /* Import Section - Modified */
+        .import-section {
+            /* Removed background, border, and padding */
+            margin-bottom: 20px;
+            display: flex;
+            justify-content: flex-end; /* Moves button to the right */
+        }
+
+        .import-btn {
+            background-color: #4f46e5;
+            color: white;
+            padding: 8px 16px;
+            border-radius: 6px;
+            font-size: 13px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: background 0.2s;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+
+        .import-btn:hover {
+            background-color: #4338ca;
+            transform: translateY(-1px);
         }
         
+        /* Forms */
         .form-group {
-            margin-bottom: 25px;
+            margin-bottom: 20px;
         }
         
         label {
             display: block;
             margin-bottom: 8px;
-            color: #333;
+            color: var(--text-main);
             font-weight: 600;
             font-size: 14px;
         }
         
-        input, select, textarea {
+        input, select {
             width: 100%;
-            padding: 12px;
-            border: 2px solid #e0e0e0;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: all 0.3s;
-        }
-        
-        input:focus, select:focus, textarea:focus {
-            outline: none;
-            border-color: #667eea;
-            box-shadow: 0 0 0 3px rgba(102, 126, 234, 0.1);
-        }
-        
-        .patient-section {
-            background: #f8f9fa;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 20px;
-            border-left: 4px solid #667eea;
-        }
-        
-        .patient-header {
-            display: flex;
-            justify-content: space-between;
-            align-items: center;
-            margin-bottom: 15px;
-        }
-        
-        .patient-header h3 {
-            color: #667eea;
-            font-size: 18px;
-        }
-        
-        .remove-btn {
-            background: #ef4444;
-            color: white;
-            border: none;
-            padding: 8px 16px;
+            padding: 10px 12px;
+            border: 1px solid var(--border-color);
             border-radius: 6px;
-            cursor: pointer;
-            font-size: 13px;
-            transition: background 0.3s;
+            background-color: var(--input-bg);
+            font-size: 14px;
+            color: var(--text-main);
+            transition: border-color 0.2s, box-shadow 0.2s;
         }
         
-        .remove-btn:hover {
-            background: #dc2626;
+        input:focus, select:focus {
+            outline: none;
+            border-color: var(--primary-color);
+            box-shadow: 0 0 0 3px rgba(0, 86, 179, 0.1);
+            background-color: white;
         }
-        
+
         .row {
             display: grid;
             grid-template-columns: 1fr 1fr;
             gap: 15px;
         }
+
+        /* Patient Card */
+        .patient-section {
+            background: white;
+            border: 1px solid var(--border-color);
+            border-radius: 8px;
+            margin-bottom: 24px;
+            padding: 20px;
+            position: relative;
+        }
+
+        .patient-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 16px;
+            padding-bottom: 12px;
+            border-bottom: 1px solid #eee;
+        }
+        
+        .patient-header h3 {
+            color: var(--primary-color);
+            font-size: 16px;
+            font-weight: 700;
+            text-transform: uppercase;
+        }
+        
+        /* Buttons */
+        button {
+            cursor: pointer;
+            font-family: inherit;
+            border: none;
+            transition: all 0.2s;
+        }
+
+        .remove-btn {
+            background: transparent;
+            color: var(--danger-color);
+            font-size: 13px;
+            font-weight: 600;
+            padding: 4px 8px;
+            border: 1px solid transparent;
+            border-radius: 4px;
+        }
+        
+        .remove-btn:hover {
+            background: #fef2f2;
+            border-color: #fecaca;
+        }
         
         .add-patient-btn {
             width: 100%;
             padding: 12px;
-            background: #10b981;
-            color: white;
-            border: none;
+            background: white;
+            color: var(--primary-color);
+            border: 2px dashed var(--border-color);
             border-radius: 8px;
-            font-size: 16px;
+            font-size: 15px;
             font-weight: 600;
-            cursor: pointer;
-            transition: background 0.3s;
-            margin-bottom: 20px;
+            margin-bottom: 24px;
         }
         
         .add-patient-btn:hover {
-            background: #059669;
+            border-color: var(--primary-color);
+            background-color: #f0f7ff;
         }
         
         .generate-btn {
             width: 100%;
-            padding: 15px;
-            background: #667eea;
+            padding: 14px;
+            background: var(--primary-color);
             color: white;
-            border: none;
             border-radius: 8px;
-            font-size: 18px;
+            font-size: 16px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
             margin-top: 10px;
+            box-shadow: 0 4px 6px rgba(0, 86, 179, 0.2);
         }
         
         .generate-btn:hover {
-            background: #5568d3;
-            transform: translateY(-2px);
-            box-shadow: 0 10px 20px rgba(102, 126, 234, 0.3);
+            background: var(--primary-hover);
+            transform: translateY(-1px);
         }
-        
+
+        /* Output Section */
         .output-section {
             margin-top: 30px;
+            border-top: 1px solid var(--border-color);
+            padding-top: 30px;
             display: none;
         }
         
         .output-box {
-            background: #f8f9fa;
+            background: #2d3748;
+            color: #e2e8f0;
             padding: 20px;
             border-radius: 8px;
             white-space: pre-wrap;
-            font-family: 'Courier New', monospace;
+            font-family: 'Consolas', 'Monaco', monospace;
             font-size: 13px;
             line-height: 1.6;
-            border: 2px solid #e0e0e0;
             max-height: 400px;
             overflow-y: auto;
+            margin-bottom: 15px;
         }
         
         .copy-btn {
             width: 100%;
             padding: 12px;
-            background: #8b5cf6;
+            background: var(--text-main);
             color: white;
-            border: none;
-            border-radius: 8px;
-            font-size: 16px;
-            font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
-            margin-top: 10px;
-        }
-        
-        .copy-btn:hover {
-            background: #7c3aed;
-        }
-        
-        .copy-btn.copied {
-            background: #10b981;
-        }
-        
-        .import-section {
-            background: #f0f9ff;
-            padding: 20px;
-            border-radius: 12px;
-            margin-bottom: 30px;
-            border: 2px dashed #667eea;
-        }
-        
-        .import-btn {
-            display: inline-block;
-            padding: 12px 24px;
-            background: #3b82f6;
-            color: white;
-            border: none;
             border-radius: 8px;
             font-size: 14px;
             font-weight: 600;
-            cursor: pointer;
-            transition: all 0.3s;
         }
         
-        .import-btn:hover {
-            background: #2563eb;
+        .copy-btn:hover {
+            background: #1a202c;
         }
         
-        .file-input {
-            display: none;
+        .copy-btn.copied {
+            background: var(--success-color);
         }
-        
-        .import-info {
-            margin-top: 10px;
-            font-size: 13px;
-            color: #666;
+
+        .checkbox-wrapper {
+            display: flex;
+            align-items: center;
+            margin-bottom: 15px;
         }
-        
-        .time-input {
-            display: grid;
-            grid-template-columns: 1fr 1fr;
-            gap: 10px;
+
+        .checkbox-wrapper input[type="checkbox"] {
+            width: auto;
+            margin-right: 10px;
+        }
+
+        /* Responsive */
+        @media (max-width: 600px) {
+            .row {
+                grid-template-columns: 1fr;
+            }
+            .container {
+                border-radius: 0;
+            }
+            body {
+                padding: 0;
+            }
         }
     </style>
 </head>
 <body>
     <div class="container">
-        <h1>📋 Frozen Section Report Generator</h1>
-        
-        <div class="import-section">
-            <h3 style="color: #3b82f6; margin-bottom: 10px;">📥 Import dari Excel</h3>
-            <input type="file" id="excel-file" class="file-input" accept=".xlsx, .xls" onchange="fileSelected()">
-            <label for="excel-file" class="import-btn">Pilih File Excel (.xlsx)</label>
-            <button class="import-btn" id="process-btn" onclick="processSpreadsheet()" style="margin-left: 10px; background: #10b981; display: none;">Proses Spreadsheet</button>
-            <div class="import-info" id="file-name"></div>
-            <div class="import-info">Import data dari sheet "LIST TINDAKAN" - hanya baris dengan "frozen section"</div>
+        <div class="header">
+            <h1>Frozen Section Report</h1>
         </div>
         
-        <div class="form-group">
-            <label for="date">Tanggal</label>
-            <input type="date" id="date" required>
-        </div>
-        
-        <div id="patients-container"></div>
-        
-        <button class="add-patient-btn" onclick="addPatient()">+ Tambah Pasien</button>
-        
-        <div class="form-group">
-            <label>
-                <input type="checkbox" id="konsulен-jaga-checkbox" onchange="toggleKonsulenJaga()" style="width: auto; margin-right: 8px;">
-                Konsulen Jaga Frozen Sore
-            </label>
-        </div>
-        
-        <div class="form-group" id="konsulen-jaga-dropdown" style="display: none;">
-            <label>Pilih Dokter Konsulen Jaga</label>
-            <select id="konsulen-jaga-select">
-                <option value="">Pilih Dokter Konsultan</option>
-                <option value="dr. Paranita Ferronika, Ph.D, Sp.PA (K)">dr. Paranita Ferronika, Ph.D, Sp.PA (K)</option>
-                <option value="dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)">dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)</option>
-                <option value="dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)">dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)</option>
-                <option value="dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)">dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)</option>
-                <option value="dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)">dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)</option>
-                <option value="Dr. dr. Indrawati, Sp.PA (K)">Dr. dr. Indrawati, Sp.PA (K)</option>
-                <option value="Prof. Dr. dr. Irianiwati, Sp.PA(K)">Prof. Dr. dr. Irianiwati, Sp.PA(K)</option>
-                <option value="dr. Setiyani Puji Lestari, Sp.PA">dr. Setiyani Puji Lestari, Sp.PA</option>
-                <option value="dr. Naomi Yoshuantari, Sp.PA (K)">dr. Naomi Yoshuantari, Sp.PA (K)</option>
-                <option value="dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)">dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)</option>
-                <option value="dr. Faizah Dwi Tirtasari, Sp.PA">dr. Faizah Dwi Tirtasari, Sp.PA</option>
-                <option value="Dr. dr. Rita Cempaka, Sp.PA (K)">Dr. dr. Rita Cempaka, Sp.PA (K)</option>
-            </select>
-        </div>
-        
-        <button class="generate-btn" onclick="generateOutput()">Generate Output</button>
-        
-        <div class="output-section" id="output-section">
-            <h2 style="color: #667eea; margin-bottom: 15px;">Output:</h2>
-            <div class="output-box" id="output"></div>
-            <button class="copy-btn" id="copy-btn" onclick="copyToClipboard()">📋 Salin ke Clipboard</button>
+        <div class="content-wrapper">
+            <!-- Import Section -->
+            <div class="import-section">
+                <input type="file" id="jadwal-file" accept=".jadwal, .json" style="display: none;" onchange="handleFileSelect(event)">
+                <button class="import-btn" onclick="document.getElementById('jadwal-file').click()">
+                    <span>📂</span> Import .jadwal
+                </button>
+            </div>
+
+            <div class="form-group">
+                <label for="date">Tanggal Laporan</label>
+                <input type="date" id="date" required>
+            </div>
+            
+            <div id="patients-container"></div>
+            
+            <button class="add-patient-btn" onclick="addPatient()">+ Tambah Pasien</button>
+            
+            <div class="checkbox-wrapper">
+                <input type="checkbox" id="konsulen-jaga-checkbox" onchange="toggleKonsulenJaga()">
+                <label for="konsulen-jaga-checkbox" style="margin-bottom:0">Konsulen Jaga Frozen Sore</label>
+            </div>
+            
+            <div class="form-group" id="konsulen-jaga-dropdown" style="display: none;">
+                <label>Pilih Dokter Konsulen Jaga</label>
+                <select id="konsulen-jaga-select">
+                    <option value="">-- Pilih Dokter Konsultan --</option>
+                    <option value="dr. Paranita Ferronika, Ph.D, Sp.PA (K)">dr. Paranita Ferronika, Ph.D, Sp.PA (K)</option>
+                    <option value="dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)">dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)</option>
+                    <option value="dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)">dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)</option>
+                    <option value="dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)">dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)</option>
+                    <option value="dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)">dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)</option>
+                    <option value="Dr. dr. Indrawati, Sp.PA (K)">Dr. dr. Indrawati, Sp.PA (K)</option>
+                    <option value="Prof. Dr. dr. Irianiwati, Sp.PA(K)">Prof. Dr. dr. Irianiwati, Sp.PA(K)</option>
+                    <option value="dr. Setiyani Puji Lestari, Sp.PA">dr. Setiyani Puji Lestari, Sp.PA</option>
+                    <option value="dr. Naomi Yoshuantari, Sp.PA (K)">dr. Naomi Yoshuantari, Sp.PA (K)</option>
+                    <option value="dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)">dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)</option>
+                    <option value="dr. Faizah Dwi Tirtasari, Sp.PA">dr. Faizah Dwi Tirtasari, Sp.PA</option>
+                    <option value="Dr. dr. Rita Cempaka, Sp.PA (K)">Dr. dr. Rita Cempaka, Sp.PA (K)</option>
+                </select>
+            </div>
+            
+            <button class="generate-btn" onclick="generateOutput()">Generate Report</button>
+            
+            <div class="output-section" id="output-section">
+                <label>Hasil Output:</label>
+                <div class="output-box" id="output"></div>
+                <button class="copy-btn" id="copy-btn" onclick="copyToClipboard()">Salin ke Clipboard</button>
+            </div>
         </div>
     </div>
 
@@ -286,337 +337,81 @@
         const days = ['Minggu', 'Senin', 'Selasa', 'Rabu', 'Kamis', 'Jumat', 'Sabtu'];
         const months = ['Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni', 'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'];
         
-        // Doctor initials mapping
-        const doctorMapping = {
-            'FE': 'dr. Paranita Ferronika, Ph.D, Sp.PA (K)',
-            'HT': 'dr. Hanggoro Tri Rinonce, Ph.D, Sp.PA (K)',
-            'DK': 'dr. Didik Setyo Heriyanto, Ph.D, Sp.PA (K)',
-            'ER': 'dr. Ery Kus Dwianingsih, Ph.D, Sp.PA (K)',
-            'DW': 'dr. Dewiyani Indah Widasari, Ph.D, Sp.PA (K)',
-            'IN': 'Dr. dr. Indrawati, Sp.PA (K)',
-            'IR': 'Prof. Dr. dr. Irianiwati, Sp.PA(K)',
-            'SY': 'dr. Setiyani Puji Lestari, Sp.PA',
-            'NY': 'dr. Naomi Yoshuantari, Sp.PA (K)',
-            'AU': 'dr. Auliya Suluk Brilliant Sumpono, Sp.PA (K)',
-            'UW': 'dr. Faizah Dwi Tirtasari, Sp.PA',
-            'RT': 'Dr. dr. Rita Cempaka, Sp.PA (K)'
-        };
-        
-        let selectedFile = null;
-        
-        function fileSelected() {
-            const fileInput = document.getElementById('excel-file');
-            const file = fileInput.files[0];
-            if (file) {
-                selectedFile = file;
-                document.getElementById('file-name').textContent = `File terpilih: ${file.name}`;
-                document.getElementById('process-btn').style.display = 'inline-block';
-            }
-        }
-        
-        function processSpreadsheet() {
-            const dateInput = document.getElementById('date').value;
-            if (!dateInput) {
-                alert('Mohon isi tanggal terlebih dahulu sebelum memproses spreadsheet');
-                return;
-            }
-            
-            if (!selectedFile) {
-                alert('Mohon pilih file Excel terlebih dahulu');
-                return;
-            }
-            
-            const reader = new FileReader();
-            reader.onload = function(e) {
-                try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // Find the "LIST TINDAKAN" sheet
-                    const sheetName = workbook.SheetNames.find(name => 
-                        name.toUpperCase().includes('LIST TINDAKAN') || name.toUpperCase().includes('LISTTINDAKAN')
-                    );
-                    
-                    if (!sheetName) {
-                        alert('Sheet "LIST TINDAKAN" tidak ditemukan dalam file Excel');
-                        return;
-                    }
-                    
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    // Collect frozen section patients
-                    const patients = [];
-                    
-                    for (let i = 0; i < jsonData.length; i++) {
-                        const row = jsonData[i];
-                        if (!row || !Array.isArray(row)) continue;
-                        
-                        // Check if column E (index 4) contains "frozen"
-                        const columnE = row[4] ? row[4].toString().toLowerCase() : '';
-                        
-                        if (columnE.includes('frozen')) {
-                            // Parse combined NAMA, USIA, RM field (Column C, index 2)
-                            let name = '', age = '', mr = '';
-                            if (row[2]) {
-                                const combined = row[2].toString().trim();
-                                const parts = combined.split(',').map(p => p.trim());
-                                if (parts.length >= 1) name = parts[0];
-                                if (parts.length >= 2) age = parts[1];
-                                if (parts.length >= 3) mr = parts[2];
-                            }
-                            
-                            // Add "th" after age if not already present
-                            const ageWithTh = age && age.includes('th') ? age : age.replace(/(\d+)\s*/, '$1 th');
-                            
-                            // Diagnosis (Column D, index 3)
-                            const diagnosis = row[3] ? row[3].toString().trim() : '';
-                            
-                            // Time (Column J, index 9)
-                            let operationTime = '';
-                            if (row[9]) {
-                                const waktu = row[9].toString().trim();
-                                const timeMatch = waktu.match(/(\d{1,2})[.:](\d{2})/);
-                                if (timeMatch) {
-                                    const hours = timeMatch[1].padStart(2, '0');
-                                    const minutes = timeMatch[2];
-                                    operationTime = `${hours}:${minutes}`;
-                                }
-                            }
-                            
-                            // Doctor consultant (Column F, index 5)
-                            let doctorAcc = '';
-                            if (row[5]) {
-                                const konsulText = row[5].toString().trim();
-                                const initialMatch = konsulText.match(/dr\.\s*([A-Z]{2})/i);
-                                if (initialMatch) {
-                                    const konsulInitial = initialMatch[1].toUpperCase();
-                                    doctorAcc = doctorMapping[konsulInitial] || '';
-                                }
-                            }
-                            
-                            // Senior (Column G, index 6)
-                            const senior = row[6] ? row[6].toString().trim() : '';
-                            
-                            // Junior (Column H, index 7)
-                            const junior = row[7] ? row[7].toString().trim() : '';
-                            
-                            if (name && operationTime && doctorAcc) {
-                                patients.push({
-                                    name, age: ageWithTh, mr, diagnosis,
-                                    operationTime, doctorAcc, senior, junior
-                                });
-                            }
-                        }
-                    }
-                    
-                    if (patients.length === 0) {
-                        alert('Tidak ada data frozen section yang ditemukan dalam file');
-                        return;
-                    }
-                    
-                    // Generate output
-                    const formattedDate = formatDate(dateInput);
-                    let output = `Selamat malam Mas dan Mbak, mohon izin menyampaikan rencana frozen section pada ${formattedDate}, ada ${patients.length} pasien:\n`;
-                    
-                    patients.forEach((patient, index) => {
-                        output += `${index + 1}.  ${patient.name}, ${patient.age}, ${patient.mr}, dengan ${patient.diagnosis}\n`;
-                        output += `Rencana operasi pukul ${patient.operationTime} WIB`;
-                        
-                        // Check if operation time is before 08:00
-                        const [hours, minutes] = patient.operationTime.split(':').map(Number);
-                        if (hours < 8) {
-                            output += ` (konfirmasi jaringan diproses paling cepat pukul 08.00 WIB)`;
-                        }
-                        
-                        output += `\nAcc ${patient.doctorAcc}\n`;
-                        output += `Senior: ${patient.senior}\n`;
-                        output += `Asisten: ${patient.junior}\n`;
-                    });
-                    
-                    // Add Konsulen Jaga if checked
-                    const konsulenJagaChecked = document.getElementById('konsulен-jaga-checkbox').checked;
-                    if (konsulenJagaChecked) {
-                        const konsulenJagaName = document.getElementById('konsulen-jaga-select').value;
-                        if (konsulenJagaName) {
-                            output += `\nKonsulen jaga frozen sore: ${konsulenJagaName}`;
-                        } else {
-                            alert('Mohon pilih dokter konsulen jaga');
-                            return;
-                        }
-                    }
-                    
-                    document.getElementById('output').textContent = output;
-                    document.getElementById('output-section').style.display = 'block';
-                    document.getElementById('output-section').scrollIntoView({ behavior: 'smooth' });
-                    
-                    alert(`Berhasil memproses ${patients.length} data pasien frozen section`);
-                    
-                } catch (error) {
-                    console.error('Error reading Excel:', error);
-                    alert('Gagal membaca file Excel. Pastikan format file benar.');
-                }
-            };
-            
-            reader.readAsArrayBuffer(selectedFile);
-        }
-        
-        function handleFileUpload(file) {
+        function handleFileSelect(event) {
+            const file = event.target.files[0];
             if (!file) return;
-            
+
             const reader = new FileReader();
             reader.onload = function(e) {
                 try {
-                    const data = new Uint8Array(e.target.result);
-                    const workbook = XLSX.read(data, { type: 'array' });
-                    
-                    // Find the "LIST TINDAKAN" sheet
-                    const sheetName = workbook.SheetNames.find(name => 
-                        name.toUpperCase().includes('LIST TINDAKAN') || name.toUpperCase().includes('LISTTINDAKAN')
-                    );
-                    
-                    if (!sheetName) {
-                        alert('Sheet "LIST TINDAKAN" tidak ditemukan dalam file Excel');
-                        return;
-                    }
-                    
-                    const worksheet = workbook.Sheets[sheetName];
-                    const jsonData = XLSX.utils.sheet_to_json(worksheet, { header: 1 });
-                    
-                    // Find header row and column indices
-                    let headerRow = -1;
-                    let headers = [];
-                    
-                    for (let i = 0; i < Math.min(10, jsonData.length); i++) {
-                        const row = jsonData[i];
-                        if (row && Array.isArray(row)) {
-                            const rowStr = row.join('|').toUpperCase();
-                            if (rowStr.includes('TINDAKAN') || rowStr.includes('NAMA') || rowStr.includes('KONSUL')) {
-                                headerRow = i;
-                                headers = row.map(h => h ? h.toString().toUpperCase().trim() : '');
-                                break;
-                            }
-                        }
-                    }
-                    
-                    if (headerRow === -1) {
-                        alert('Header tidak ditemukan. Pastikan ada kolom TINDAKAN, NAMA, dll.');
-                        return;
-                    }
-                    
-                    // Find column indices
-                    const colIndices = {
-                        tindakan: headers.findIndex(h => h.includes('TINDAKAN')),
-                        namaUsiaRm: headers.findIndex(h => h.includes('NAMA') && (h.includes('USIA') || h.includes('RM'))),
-                        diagnosis: headers.findIndex(h => h.includes('DIAGNOSIS') || h.includes('DIAGNOSA')),
-                        waktu: headers.findIndex(h => h.includes('JAM') || h.includes('WAKTU')),
-                        konsul: headers.findIndex(h => h.includes('KONSUL') && !h.includes('JAGA')),
-                        senior: headers.findIndex(h => h.includes('SENIOR')),
-                        junior: headers.findIndex(h => h.includes('JUNIOR') || h.includes('ASISTEN'))
-                    };
-                    
-                    // Clear existing patients
-                    document.getElementById('patients-container').innerHTML = '';
-                    patientCount = 0;
-                    
-                    // Process data rows
-                    let importedCount = 0;
-                    for (let i = headerRow + 1; i < jsonData.length; i++) {
-                        const row = jsonData[i];
-                        if (!row || !Array.isArray(row)) continue;
-                        
-                        // Check if column E (index 4) contains "frozen"
-                        const columnE = row[4] ? row[4].toString().toLowerCase() : '';
-                        
-                        // Check if column E contains "frozen"
-                        if (columnE.includes('frozen')) {
-                            addPatient();
-                            
-                            const patientDiv = document.querySelector('.patient-section:last-child');
-                            
-                            // Parse combined NAMA, USIA, RM field
-                            if (colIndices.namaUsiaRm >= 0 && row[colIndices.namaUsiaRm]) {
-                                const combined = row[colIndices.namaUsiaRm].toString().trim();
-                                // Format: "Ny. Kartini, 69 th, 02326704"
-                                const parts = combined.split(',').map(p => p.trim());
-                                
-                                if (parts.length >= 1) {
-                                    patientDiv.querySelector('.patient-name').value = parts[0];
-                                }
-                                if (parts.length >= 2) {
-                                    patientDiv.querySelector('.patient-age').value = parts[1];
-                                }
-                                if (parts.length >= 3) {
-                                    patientDiv.querySelector('.patient-mr').value = parts[2];
-                                }
-                            }
-                            
-                            if (colIndices.diagnosis >= 0 && row[colIndices.diagnosis]) {
-                                patientDiv.querySelector('.patient-diagnosis').value = row[colIndices.diagnosis].toString().trim();
-                            }
-                            
-                            if (colIndices.waktu >= 0 && row[colIndices.waktu]) {
-                                const waktu = row[colIndices.waktu].toString().trim();
-                                // Extract time from formats like "07.30 (konfirmasi jaringan" or "11.00"
-                                let timeStr = waktu;
-                                
-                                // Extract HH.MM or HH:MM pattern
-                                const timeMatch = waktu.match(/(\d{1,2})[.:](\d{2})/);
-                                if (timeMatch) {
-                                    const hours = timeMatch[1].padStart(2, '0');
-                                    const minutes = timeMatch[2];
-                                    timeStr = `${hours}:${minutes}`;
-                                } else if (!isNaN(waktu)) {
-                                    // Excel time as decimal
-                                    const decimal = parseFloat(waktu);
-                                    const hours = Math.floor(decimal * 24);
-                                    const minutes = Math.floor((decimal * 24 * 60) % 60);
-                                    timeStr = `${hours.toString().padStart(2, '0')}:${minutes.toString().padStart(2, '0')}`;
-                                }
-                                patientDiv.querySelector('.operation-time').value = timeStr;
-                            }
-                            
-                            if (colIndices.konsul >= 0 && row[colIndices.konsul]) {
-                                const konsulText = row[colIndices.konsul].toString().trim();
-                                // Extract initials from "dr. AU" format
-                                const initialMatch = konsulText.match(/dr\.\s*([A-Z]{2})/i);
-                                if (initialMatch) {
-                                    const konsulInitial = initialMatch[1].toUpperCase();
-                                    const doctorName = doctorMapping[konsulInitial] || '';
-                                    if (doctorName) {
-                                        patientDiv.querySelector('.doctor-acc').value = doctorName;
-                                    }
-                                }
-                            }
-                            
-                            if (colIndices.senior >= 0 && row[colIndices.senior]) {
-                                patientDiv.querySelector('.senior-initials').value = row[colIndices.senior].toString().trim();
-                            }
-                            
-                            if (colIndices.junior >= 0 && row[colIndices.junior]) {
-                                patientDiv.querySelector('.junior-initials').value = row[colIndices.junior].toString().trim();
-                            }
-                            
-                            importedCount++;
-                        }
-                    }
-                    
-                    if (importedCount === 0) {
-                        alert('Tidak ada data frozen section yang ditemukan dalam file');
-                        addPatient(); // Add at least one empty patient
-                    } else {
-                        alert(`Berhasil import ${importedCount} data pasien frozen section`);
-                    }
-                    
+                    const data = JSON.parse(e.target.result);
+                    processImportData(data);
                 } catch (error) {
-                    console.error('Error reading Excel:', error);
-                    alert('Gagal membaca file Excel. Pastikan format file benar.');
+                    console.error(error);
+                    alert("Gagal membaca file. Pastikan format file .jadwal atau .json valid.");
                 }
+                // Reset file input so the same file can be selected again if needed
+                event.target.value = '';
             };
-            
-            reader.readAsArrayBuffer(file);
+            reader.readAsText(file);
         }
-        
+
+        function processImportData(data) {
+            // Filter for "Frozen" only
+            const frozenPatients = data.filter(item => item.tindakan && item.tindakan.toLowerCase() === 'frozen');
+
+            if (frozenPatients.length === 0) {
+                alert("Tidak ada data 'Frozen' ditemukan dalam file ini.");
+                return;
+            }
+
+            // Confirm overwrite
+            if (patientCount > 0) {
+                if (!confirm("Data yang ada akan dihapus dan diganti dengan data import. Lanjutkan?")) {
+                    return;
+                }
+            }
+
+            // Clear existing data
+            document.getElementById('patients-container').innerHTML = '';
+            patientCount = 0;
+
+            // Set Date from the first valid record
+            if (frozenPatients[0].tanggal) {
+                document.getElementById('date').value = frozenPatients[0].tanggal;
+            }
+
+            // Process each patient
+            frozenPatients.forEach(p => {
+                addPatient(); // Create the DOM elements
+                
+                const container = document.getElementById(`patient-${patientCount}`);
+                
+                // Map JSON fields to Inputs
+                if (p.nama) container.querySelector('.patient-name').value = p.nama;
+                if (p.usia) container.querySelector('.patient-age').value = p.usia;
+                if (p.norm) container.querySelector('.patient-mr').value = p.norm;
+                if (p.diagnosis) container.querySelector('.patient-diagnosis').value = p.diagnosis;
+                if (p.jam) container.querySelector('.operation-time').value = p.jam;
+                if (p.senior) container.querySelector('.senior-initials').value = p.senior;
+                if (p.asisten) container.querySelector('.junior-initials').value = p.asisten;
+
+                // Handle Doctor Select
+                if (p.konsulen) {
+                    const select = container.querySelector('.doctor-acc');
+                    // Iterate options to find a match
+                    for (let i = 0; i < select.options.length; i++) {
+                        if (select.options[i].value === p.konsulen) {
+                            select.selectedIndex = i;
+                            break;
+                        }
+                    }
+                }
+            });
+
+            alert(`Berhasil import ${frozenPatients.length} pasien Frozen Section.`);
+        }
+
         function addPatient() {
             patientCount++;
             const container = document.getElementById('patients-container');
@@ -649,10 +444,7 @@
                 </div>
                 <div class="form-group">
                     <label>Waktu Operasi</label>
-                    <div class="time-input">
-                        <input type="time" class="operation-time" required>
-                        <input type="time" class="confirmation-time" placeholder="Waktu konfirmasi (opsional)">
-                    </div>
+                    <input type="time" class="operation-time" required>
                 </div>
                 <div class="form-group">
                     <label>Dokter Konsultan (Acc)</label>
@@ -730,19 +522,21 @@
             
             let output = `Selamat malam Mas dan Mbak, mohon izin menyampaikan rencana frozen section pada ${formattedDate}, ada ${totalPatients} pasien:\n`;
             
+            let isValid = true;
+
             patients.forEach((patient, index) => {
                 const name = patient.querySelector('.patient-name').value;
                 const age = patient.querySelector('.patient-age').value;
                 const mr = patient.querySelector('.patient-mr').value;
                 const diagnosis = patient.querySelector('.patient-diagnosis').value;
                 const operationTime = patient.querySelector('.operation-time').value;
-                const confirmationTime = patient.querySelector('.confirmation-time').value;
                 const doctorAcc = patient.querySelector('.doctor-acc').value;
                 const senior = patient.querySelector('.senior-initials').value;
                 const junior = patient.querySelector('.junior-initials').value;
                 
                 if (!name || !age || !mr || !diagnosis || !operationTime || !doctorAcc || !senior || !junior) {
                     alert(`Mohon lengkapi semua data untuk Pasien ${index + 1}`);
+                    isValid = false;
                     return;
                 }
                 
@@ -756,8 +550,6 @@
                 const [hours, minutes] = operationTime.split(':').map(Number);
                 if (hours < 8) {
                     output += ` (konfirmasi jaringan diproses paling cepat pukul 08.00 WIB)`;
-                } else if (confirmationTime) {
-                    output += ` (konfirmasi jaringan diproses paling cepat pukul ${confirmationTime} WIB)`;
                 }
                 
                 output += `\nAcc ${doctorAcc}\n`;
@@ -765,12 +557,17 @@
                 output += `Asisten: ${junior}\n`;
             });
             
+            if (!isValid) return;
+
             // Add Konsulen Jaga if checked
-            const konsulenJagaChecked = document.getElementById('konsulен-jaga-checkbox').checked;
+            const konsulenJagaChecked = document.getElementById('konsulen-jaga-checkbox').checked;
             if (konsulenJagaChecked) {
                 const konsulenJagaName = document.getElementById('konsulen-jaga-select').value;
                 if (konsulenJagaName) {
                     output += `\nKonsulen jaga frozen sore: ${konsulenJagaName}`;
+                } else {
+                    alert('Mohon pilih dokter konsulen jaga');
+                    return;
                 }
             }
             
@@ -787,20 +584,23 @@
                 btn.classList.add('copied');
                 
                 setTimeout(() => {
-                    btn.textContent = '📋 Salin ke Clipboard';
+                    btn.textContent = 'Salin ke Clipboard';
                     btn.classList.remove('copied');
                 }, 2000);
             });
         }
         
         function toggleKonsulenJaga() {
-            const checkbox = document.getElementById('konsulен-jaga-checkbox');
+            const checkbox = document.getElementById('konsulen-jaga-checkbox');
             const dropdown = document.getElementById('konsulen-jaga-dropdown');
             dropdown.style.display = checkbox.checked ? 'block' : 'none';
         }
         
         // Add first patient on load
         addPatient();
+        
+        // Set today's date
+        document.getElementById('date').valueAsDate = new Date();
     </script>
 </body>
 </html>
